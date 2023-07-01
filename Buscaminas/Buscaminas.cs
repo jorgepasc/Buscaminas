@@ -1,11 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
 using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace Buscaminas
@@ -15,7 +10,11 @@ namespace Buscaminas
     /// 
     /// En esta solución del buscaminas se utiliza un array de dos dimensiones (columnas y filas) para controlar los límites.
     /// Cuando se pulsa un botón sin mina se le cambia el estilo, y el color acorde a las minas que tiene cerca. 
-    /// Con una función recursiva se comprueba si el estilo del boton que se quiere revisar está cambiado.    
+    /// Con una función recursiva se comprueba si el estilo del boton que se quiere revisar está cambiado.
+    /// 
+    /// TODO: 
+    /// - Add timer
+    /// - Add Rankings
     /// </summary>
     public partial class Buscaminas : Form
     {
@@ -29,6 +28,7 @@ namespace Buscaminas
         const string DIFICULTAD_EXTREMA = "EXTREMA";
         const string MINA = "mina";
         const string FLAG = "flag";
+
         Dictionary<int, Color> btnColors = new Dictionary<int, Color>()
         {
             { 1, Color.Blue},
@@ -43,6 +43,7 @@ namespace Buscaminas
 
         private void mnuClick(object sender, EventArgs e)
         {
+            cbMostrar.Checked = false;
             if (sender.ToString().Equals(DIFICULTAD_NORMAL) || sender.ToString().Equals(DIFICULTAD_EXTREMA))
             {
                 dificultad = sender.ToString();
@@ -225,10 +226,8 @@ namespace Buscaminas
         /// <param name="btn">El boton que se quiere gestionar</param>
         private void contarMinas(Button btn)
         {
-            int col = 0, fila = 0;
-
-            fila = int.Parse(btn.Name.Substring(0, 2));//Obtenemos las coordenadas del boton del name
-            col = int.Parse(btn.Name.Substring((btn.Name.IndexOf('-') + 1), 2));
+            int fila = int.Parse(btn.Name.Substring(0, 2));//Obtenemos las coordenadas del boton del name
+            int col = int.Parse(btn.Name.Substring((btn.Name.IndexOf('-') + 1), 2));
 
             int contaMinas = 0;
             if (sonValoresValidos(fila, col))
@@ -342,27 +341,30 @@ namespace Buscaminas
             {
                 for (int col = 0; col < numColumnas; col++)
                 {
-                    botones[col, fila] = new Button();
-                    botones[col, fila].Width = ancho;
-                    botones[col, fila].Height = alto;
-                    botones[col, fila].Left = (col + 1) * izquierda;
-                    botones[col, fila].Top = (fila + 1) * altura;
-                    botones[col, fila].MouseDown += new MouseEventHandler(btnTablero_click);
-                    botones[col, fila].Tag = "";//Inicializamos el tag con cadena vacía para evitar excepciones al comprobarlo
+                    var btn = new Button();
+                    btn.Width = ancho;
+                    btn.Height = alto;
+                    btn.Left = (col + 1) * izquierda;
+                    btn.Top = (fila + 1) * altura;
+                    btn.MouseDown += new MouseEventHandler(btnTablero_click);
+                    btn.Tag = "";//Inicializamos el tag con cadena vacía para evitar excepciones al comprobarlo
                     if (fila < 10)/*Guardamos las coordenadas en dos cifras del name separadas por un guion*/
                     {
                         if (col < 10)
-                            botones[col, fila].Name = "0" + fila + "-" + "0" + col;
+                            btn.Name = "0" + fila + "-" + "0" + col;
                         else
-                            botones[col, fila].Name = "0" + fila + "-" + col;
+                            btn.Name = "0" + fila + "-" + col;
                     }
                     else
                     {
                         if (col < 10)
-                            botones[col, fila].Name = fila + "-" + "0" + col;
+                            btn.Name = fila + "-" + "0" + col;
                         else
-                            botones[col, fila].Name = fila + "-" + col;
+                            btn.Name = fila + "-" + col;
                     }
+
+                    botones[col, fila] = btn;
+
                     Controls.Add(botones[col, fila]);
                 }
             }
