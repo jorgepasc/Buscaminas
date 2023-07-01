@@ -28,6 +28,7 @@ namespace Buscaminas
         const string DIFICULTAD_NORMAL = "NORMAL";
         const string DIFICULTAD_EXTREMA = "EXTREMA";
         const string MINA = "mina";
+        const string FLAG = "flag";
         Dictionary<int, Color> btnColors = new Dictionary<int, Color>()
         {
             { 1, Color.Blue},
@@ -76,7 +77,7 @@ namespace Buscaminas
                     clickarNumero(btn);
                 }
 
-                if (btn.BackgroundImage != null && btn.BackgroundImage.Tag.Equals("flag"))//Si hace click izquierdo en una bandera no hace nada
+                if (IsFlag(btn))//Si hace click izquierdo en una bandera no hace nada
                     return;
 
                 else if (btn.FlatStyle == FlatStyle.Flat)//No deshabilitamos el boton, le cambiamos el estilo  y si vuelve a clickar en el no hace nada               
@@ -94,11 +95,13 @@ namespace Buscaminas
             }
             else if (e.Button == MouseButtons.Right)//Si se ha hecho click derecho se quitará o se pondrá bandera en esa casilla
             {
-                Image img = Image.FromFile("flag.png");
-                img.Tag = "flag";//Se crea la imagen como objeto para darle un tag y distinguirla de la imagen de mina
                 if (btn.FlatStyle == FlatStyle.Flat)
                     return;
-                if (btn.BackgroundImage != null && btn.BackgroundImage.Tag.Equals("flag"))//Si ya tiene una bandera la quitamos
+
+                Image img = Image.FromFile("flag.png");
+                img.Tag = FLAG;//Se crea la imagen como objeto para darle un tag y distinguirla de la imagen de mina
+
+                if (IsFlag(btn))//Si ya tiene una bandera la quitamos
                 {
                     btn.BackgroundImage = null;
                     lblValueMinasRestantes.Text = (int.Parse(lblValueMinasRestantes.Text) + 1) + "";
@@ -157,25 +160,20 @@ namespace Buscaminas
         /// <param name="clickedButton">El boton que se ha clickado</param>
         private void clickarNumero(Button clickedButton)
         {
-            int col = 0, fila = 0;
             int contaBanderas = 0, banderasCorrectas = 0;
-            fila = int.Parse(clickedButton.Name.Substring(0, 2));//Obtenemos los indices de la tabla correspondientes al boton de su nombre (le hemos escrito en el nombre su posicion al crearlo)
-            col = int.Parse(clickedButton.Name.Substring((clickedButton.Name.IndexOf('-') + 1), 2));
+            int fila = int.Parse(clickedButton.Name.Substring(0, 2));//Obtenemos los indices de la tabla correspondientes al boton de su nombre (le hemos escrito en el nombre su posicion al crearlo)
+            int col = int.Parse(clickedButton.Name.Substring((clickedButton.Name.IndexOf('-') + 1), 2));
 
             for (int f = fila - 1; f < fila + 2; f++)//Recorremos todos los  botones de alrededor del pulsado
             {
                 for (int c = col - 1; c < col + 2; c++)
                 {
-                    Button btn = botones[c, f];
-                    if (sonValoresValidos(f, c))
+                    if (sonValoresValidos(f, c) && IsFlag(botones[c, f]))
                     {
-                        if (btn.BackgroundImage != null && btn.BackgroundImage.Tag.Equals("flag"))
+                        contaBanderas++;
+                        if (IsMina(botones[c, f]))
                         {
-                            contaBanderas++;
-                            if (IsMina(btn))
-                            {
-                                banderasCorrectas++;
-                            }
+                            banderasCorrectas++;
                         }
                     }
                 }
@@ -192,7 +190,6 @@ namespace Buscaminas
                     clickedButton.Tag += "bonus";//Le añadimos al tag un texto para identificarlo y que entre a la recursiva aun siendo un boton ya "revisado"
                     contarMinas(clickedButton);
                 }
-
             }
         }
 
@@ -209,7 +206,17 @@ namespace Buscaminas
         /// <returns>True si el boton es mina, false si no lo es</returns>
         private bool IsMina(Button btn)
         {
-            return btn.Tag.ToString() == MINA;
+            return btn.Tag?.ToString() == MINA;
+        }
+
+        /// <summary>
+        /// Comprueba si el boton clickado es bandera o no
+        /// </summary>
+        /// <param name="btn">El boton clickado</param>
+        /// <returns>True si el boton es flag, false si no lo es</returns>
+        private bool IsFlag(Button btn)
+        {
+            return btn.BackgroundImage?.Tag?.ToString() == "flag";
         }
 
         /// <summary>
@@ -235,10 +242,9 @@ namespace Buscaminas
 
                     if (contaMinas == 0 || botones[col, fila].Tag.ToString().Contains("bonus"))//Si contaminas es 0 hacemos la recursiva(la forzamos con el tag en el caso del bonus)
                     {
-                        int f = 0, c = 0;
-                        for (f = fila - 1; f < fila + 2; f++)//Recorremos todos los  botones de alrededor del pulsado
+                        for (int f = fila - 1; f < fila + 2; f++)//Recorremos todos los  botones de alrededor del pulsado
                         {
-                            for (c = col - 1; c < col + 2; c++)
+                            for (int c = col - 1; c < col + 2; c++)
                             {
                                 if (sonValoresValidos(f, c) && botones[c, f].Tag.ToString().Equals(""))//Si existe el boton y no es mina cuenta las minas del nuevo boton
                                 {
@@ -281,19 +287,7 @@ namespace Buscaminas
         /// <param name="col"></param>
         private bool sonValoresValidos(int fila, int col)
         {
-            bool valido = true;
-
-            if (fila < 0)
-                valido = false;
-            else if (fila >= numFilas)
-                valido = false;
-            else if (col < 0)
-                valido = false;
-            else if (col >= numColumnas)
-                valido = false;
-
-            return valido;
-
+            return fila >= 0 && fila < numFilas && col >= 0 && col < numColumnas;
         }
 
         /// <summary>
@@ -311,12 +305,9 @@ namespace Buscaminas
             {
                 for (c = colOrig - 1; c < colOrig + 2; c++)
                 {
-                    if (sonValoresValidos(f, c))
+                    if (sonValoresValidos(f, c) && IsMina(botones[c, f]))
                     {
-                        if (IsMina(botones[c, f]))
-                        {
-                            contaMinas++;
-                        }
+                        contaMinas++;
                     }
                 }
             }//for
@@ -382,9 +373,8 @@ namespace Buscaminas
         /// Borra de la pantalla los botones
         /// </summary>
         /// <param name="botones">Matriz con los botones anteriores</param>
-        public void borrarTablero(Button[,] botones)
+        private void borrarTablero(Button[,] botones)
         {
-
             for (int fila = 0; fila < numFilas; fila++)
             {
                 for (int col = 0; col < numColumnas; col++)
@@ -399,7 +389,7 @@ namespace Buscaminas
         /// <param name="numCasillas">Filas * Columnas</param>
         /// <param name="dificultad">Dificultad en la que se esta jugando</param>
         /// <returns></returns>
-        public Button[,] generarMinas(Button[,] botones, int numCasillas, string dificultad)
+        private Button[,] generarMinas(Button[,] botones, int numCasillas, string dificultad)
         {
             Random rnd = new Random();
             switch (numCasillas)//Dependiendo del numero de casillas ponemos mas o menos bombas
@@ -451,21 +441,17 @@ namespace Buscaminas
         /// <param name="e"></param>
         private void mostrarMinas(object sender, EventArgs e)
         {
-            if (((CheckBox)sender).Checked)//Si quiere mostrar las minas, recorremos el tablero y cuando la casilla sea mina le ponemos la imagen
+            if (((CheckBox)sender).Checked)//Si quiere mostrar las minas, recorremos el tablero y cuando la casilla sea mina (sin bandera) le ponemos la imagen
             {
                 for (int fila = 0; fila < numFilas; fila++)
                 {
                     for (int col = 0; col < numColumnas; col++)
                     {
-                        if (IsMina(botones[col, fila]))//Para los botones que tienen mina comprueba si están coloreados o no
+                        if (botones[col, fila].BackgroundImage == null && IsMina(botones[col, fila]))//Para los botones que tienen mina comprueba si están coloreados o no
                         {
-                            if (botones[col, fila].BackgroundImage == null)//Si ya tiene imagen es que tiene una bandera
-                            {
-                                botones[col, fila].BackgroundImage = Image.FromFile("mina.png");
-                                botones[col, fila].BackgroundImage.Tag = MINA;//Le ponemos tag para cambiar la bandera si le vuelves a dar click dcho
-                                botones[col, fila].BackgroundImageLayout = ImageLayout.Stretch;
-                            }
-
+                            botones[col, fila].BackgroundImage = Image.FromFile("mina.png");
+                            botones[col, fila].BackgroundImage.Tag = MINA;//Le ponemos tag para cambiar la bandera si le vuelves a dar click dcho
+                            botones[col, fila].BackgroundImageLayout = ImageLayout.Stretch;
                         }
                     }
                 }
@@ -476,12 +462,9 @@ namespace Buscaminas
                 {
                     for (int col = 0; col < numColumnas; col++)
                     {
-                        if (IsMina(botones[col, fila]))//Para los botones que tienen mina comprueba si están con imagen o no
+                        if (IsMina(botones[col, fila]) && !IsFlag(botones[col, fila]))//Para los botones que tienen mina comprueba si están con imagen o no
                         {
-                            if (botones[col, fila].BackgroundImage != null && !botones[col, fila].BackgroundImage.Tag.Equals("flag"))//Le hemos puesto tag a la imagen para diferenciar entre bandera y mina
-                            {
-                                botones[col, fila].BackgroundImage = null;
-                            }
+                            botones[col, fila].BackgroundImage = null;
                         }
                     }
                 }
